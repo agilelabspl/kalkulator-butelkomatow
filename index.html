@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kalkulator Butelkomatów 🍾 Ile naprawdę kosztuje oddawanie butelek?</title>
+<meta name="description" content="Sprawdź, czy oddawanie butelek w butelkomacie się opłaca. Policz prawdziwy koszt swojego czasu!">
+<meta property="og:title" content="Kalkulator Butelkomatów 🍾">
+<meta property="og:description" content="Ile naprawdę kosztuje Cię oddawanie butelek? Sprawdź!">
+<meta property="og:type" content="website">
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+  :root{
+    --bg:#fdf6e3;
+    --card:#fff;
+    --accent:#2ecc40;
+    --accent2:#ff6f00;
+    --text:#2d2d2d;
+    --muted:#777;
+    --loss:#e74c3c;
+    --win:#2ecc40;
+    --radius:16px;
+    --shadow:0 4px 24px rgba(0,0,0,.08);
+  }
+
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    min-height:100vh;
+    padding:16px;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+
+  .container{
+    width:100%;
+    max-width:480px;
+  }
+
+  /* HEADER */
+  .header{
+    text-align:center;
+    padding:32px 0 24px;
+  }
+  .header .bottles{
+    font-size:40px;
+    letter-spacing:4px;
+    margin-bottom:8px;
+  }
+  .header h1{
+    font-size:1.6rem;
+    font-weight:800;
+    line-height:1.2;
+    margin-bottom:8px;
+  }
+  .header p{
+    font-size:.95rem;
+    color:var(--muted);
+    line-height:1.4;
+  }
+
+  /* CARD */
+  .card{
+    background:var(--card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow);
+    padding:24px;
+    margin-bottom:16px;
+  }
+
+  /* INPUTS */
+  .field{
+    margin-bottom:20px;
+  }
+  .field:last-child{
+    margin-bottom:0;
+  }
+  .field label{
+    display:block;
+    font-weight:600;
+    font-size:.9rem;
+    margin-bottom:6px;
+  }
+  .field .hint{
+    font-size:.8rem;
+    color:var(--muted);
+    margin-bottom:6px;
+    display:block;
+  }
+  .input-wrap{
+    display:flex;
+    align-items:center;
+    background:#f7f7f7;
+    border:2px solid #e0e0e0;
+    border-radius:12px;
+    padding:0 14px;
+    transition:border-color .2s;
+  }
+  .input-wrap:focus-within{
+    border-color:var(--accent);
+  }
+  .input-wrap .icon{
+    font-size:1.3rem;
+    margin-right:10px;
+    flex-shrink:0;
+  }
+  .input-wrap input{
+    flex:1;
+    border:none;
+    background:transparent;
+    font-size:1.1rem;
+    padding:14px 0;
+    outline:none;
+    font-weight:600;
+    color:var(--text);
+    width:100%;
+    -moz-appearance:textfield;
+  }
+  .input-wrap input::-webkit-outer-spin-button,
+  .input-wrap input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+  }
+  .input-wrap .unit{
+    font-size:.85rem;
+    color:var(--muted);
+    font-weight:600;
+    margin-left:8px;
+    white-space:nowrap;
+  }
+
+  /* BUTTON */
+  .btn{
+    display:block;
+    width:100%;
+    padding:16px;
+    border:none;
+    border-radius:12px;
+    font-size:1.1rem;
+    font-weight:700;
+    cursor:pointer;
+    transition:transform .15s,box-shadow .15s;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .btn:active{
+    transform:scale(.97);
+  }
+  .btn-primary{
+    background:var(--accent);
+    color:#fff;
+    box-shadow:0 4px 16px rgba(46,204,64,.3);
+  }
+  .btn-share{
+    background:var(--accent2);
+    color:#fff;
+    box-shadow:0 4px 16px rgba(255,111,0,.25);
+    margin-top:12px;
+    font-size:1rem;
+  }
+
+  /* RESULT */
+  .result{
+    display:none;
+    text-align:center;
+    padding:28px 20px;
+  }
+  .result.visible{
+    display:block;
+    animation:fadeUp .4s ease-out;
+  }
+  @keyframes fadeUp{
+    from{opacity:0;transform:translateY(16px)}
+    to{opacity:1;transform:translateY(0)}
+  }
+  .result .verdict-emoji{
+    font-size:56px;
+    display:block;
+    margin-bottom:8px;
+  }
+  .result .verdict{
+    font-size:1.1rem;
+    font-weight:700;
+    margin-bottom:20px;
+    line-height:1.3;
+  }
+  .result .verdict.loss{color:var(--loss)}
+  .result .verdict.win{color:var(--win)}
+  .result .verdict.neutral{color:var(--muted)}
+
+  .result .breakdown{
+    text-align:left;
+    background:#f9f9f9;
+    border-radius:12px;
+    padding:16px;
+    margin-bottom:16px;
+  }
+  .result .breakdown .row{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:8px 0;
+    font-size:.9rem;
+  }
+  .result .breakdown .row+.row{
+    border-top:1px solid #eee;
+  }
+  .result .breakdown .row .label{
+    color:var(--muted);
+  }
+  .result .breakdown .row .value{
+    font-weight:700;
+    font-size:1rem;
+  }
+  .result .breakdown .row.total{
+    padding-top:12px;
+    margin-top:4px;
+    border-top:2px solid #ddd;
+  }
+  .result .breakdown .row.total .label{
+    color:var(--text);
+    font-weight:700;
+  }
+  .result .breakdown .row.total .value{
+    font-size:1.15rem;
+  }
+
+  .result .fun-fact{
+    font-size:.85rem;
+    color:var(--muted);
+    line-height:1.4;
+    margin-top:16px;
+    padding:12px;
+    background:#fff8e1;
+    border-radius:10px;
+  }
+
+  /* TOAST */
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(80px);
+    background:#333;
+    color:#fff;
+    padding:12px 24px;
+    border-radius:50px;
+    font-size:.9rem;
+    font-weight:600;
+    opacity:0;
+    transition:all .3s ease;
+    z-index:100;
+    pointer-events:none;
+  }
+  .toast.show{
+    transform:translateX(-50%) translateY(0);
+    opacity:1;
+  }
+
+  /* FOOTER */
+  .footer{
+    text-align:center;
+    padding:32px 0;
+    font-size:1rem;
+    color:var(--text);
+    line-height:1.6;
+    font-weight:500;
+  }
+
+  /* shake animation on error */
+  @keyframes shake{
+    0%,100%{transform:translateX(0)}
+    20%,60%{transform:translateX(-6px)}
+    40%,80%{transform:translateX(6px)}
+  }
+  .shake{animation:shake .4s ease}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header class="header">
+    <div class="bottles">🍾🍾🍾🍾🍾🍾🍾</div>
+    <h1>Kalkulator Butelkomatów</h1>
+    <p>Ile tak naprawdę płacisz za przyjemność stania w kolejce z reklamówką pełną butelek?</p>
+  </header>
+
+  <div class="card" id="inputCard">
+    <div class="field">
+      <label for="hourlyRate">Ile zarabiasz na godzinę?</label>
+      <span class="hint">Twoja stawka netto (lub orientacyjna)</span>
+      <div class="input-wrap">
+        <span class="icon">💰</span>
+        <input type="number" id="hourlyRate" inputmode="decimal" placeholder="np. 50" min="0" step="any">
+        <span class="unit">zł/h</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="timeSpent">Ile czasu zajmuje oddawanie?</label>
+      <span class="hint">Uwzględnij stanie w kolejce</span>
+      <div class="input-wrap">
+        <span class="icon">⏱️</span>
+        <input type="number" id="timeSpent" inputmode="decimal" placeholder="np. 30" min="0" step="any">
+        <span class="unit">minut</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="bottleCount">Ile butelek oddajesz?</label>
+      <span class="hint">Wszystkie za jednym razem</span>
+      <div class="input-wrap">
+        <span class="icon">🫙</span>
+        <input type="number" id="bottleCount" inputmode="numeric" placeholder="np. 20" min="0" step="1">
+        <span class="unit">szt.</span>
+      </div>
+    </div>
+
+    <button class="btn btn-primary" id="calcBtn">Oblicz co z tego wynika</button>
+  </div>
+
+  <div class="card result" id="resultCard">
+    <span class="verdict-emoji" id="verdictEmoji"></span>
+    <div class="verdict" id="verdictText"></div>
+
+    <div class="breakdown">
+      <div class="row">
+        <span class="label">Twój czas jest wart</span>
+        <span class="value" id="timeCost"></span>
+      </div>
+      <div class="row">
+        <span class="label">Kaucja za butelki</span>
+        <span class="value" id="bottleValue"></span>
+      </div>
+      <div class="row total">
+        <span class="label">Bilans</span>
+        <span class="value" id="balance"></span>
+      </div>
+    </div>
+
+    <div class="fun-fact" id="funFact"></div>
+
+    <button class="btn btn-share" id="shareBtn">Udostępnij wynik</button>
+  </div>
+
+  <footer class="footer">
+    Żaden butelkomat nie ucierpiał podczas tworzenia tego kalkulatora.<br>
+    Kaucja = 0,50 zł / butelka.
+  </footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  const $ = id => document.getElementById(id);
+
+  const KAUCJA = 0.50; // PLN per bottle
+
+  const funFacts = [
+    (rate, time, bottles) => `Za koszt tego czasu kupisz ${Math.max(1, Math.floor((rate / 60 * time) / 5))} kebabów. Bez kolejki, bez sortowania, sos czosnkowy gratis.`,
+    (rate, time, bottles) => `Twoja „stawka butelkomatowa" to ${formatPLN(bottles * KAUCJA / (time / 60))}/h. Nie wpisuj tego w CV.`,
+    (rate, time, bottles) => `Żeby wyjść na zero, musiałbyś oddać ${Math.ceil((rate / 60 * time) / KAUCJA)} butelek. Tyle to chyba ma tylko sklep.`,
+    (rate, time, bottles) => `${time} minut życia, których nikt Ci nie zwróci. Butelkomat nie ma takiej opcji.`,
+    (rate, time, bottles) => `${bottles} butelek. Gdyby każda miała uczucia, byłyby Ci wdzięczne. Ale nie mają. I nie są.`,
+    (rate, time, bottles) => `W tym czasie mógłbyś zjeść ${Math.max(1, Math.floor(time / 3))} pączków. Ale wybrałeś butelkomat. Szacunek (i współczucie).`,
+    (rate, time, bottles) => `Twoja babcia oddawała butelki do sklepu w 2 minuty. Bez aplikacji, bez ekranu dotykowego, bez kolejki. Postęp.`,
+    (rate, time, bottles) => `Gdybyś za każdą minutę przy butelkomacie dostawał złotówkę, miałbyś ${formatPLN(time)}. A masz ${formatPLN(bottles * KAUCJA)}. Taka matematyka.`,
+    (rate, time, bottles) => `Fun fact: butelkomat nie mówi „dziękuję". Zero wdzięczności za ${time} minut Twojego życia.`,
+  ];
+
+  function formatPLN(val) {
+    return val.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' zł';
+  }
+
+  function showToast(msg) {
+    const t = $('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+
+  function shakeInput(id) {
+    const wrap = $(id).closest('.input-wrap');
+    wrap.classList.add('shake');
+    setTimeout(() => wrap.classList.remove('shake'), 400);
+  }
+
+  function calculate() {
+    const rate = parseFloat($('hourlyRate').value);
+    const time = parseFloat($('timeSpent').value);
+    const bottles = parseInt($('bottleCount').value, 10);
+
+    let valid = true;
+    if (!rate || rate <= 0) { shakeInput('hourlyRate'); valid = false; }
+    if (!time || time <= 0) { shakeInput('timeSpent'); valid = false; }
+    if (!bottles || bottles <= 0) { shakeInput('bottleCount'); valid = false; }
+    if (!valid) return;
+
+    const timeCost = (rate / 60) * time;
+    const bottleValue = bottles * KAUCJA;
+    const balance = bottleValue - timeCost;
+
+    $('timeCost').textContent = formatPLN(timeCost);
+    $('bottleValue').textContent = formatPLN(bottleValue);
+
+    const balEl = $('balance');
+    balEl.textContent = (balance >= 0 ? '+' : '') + formatPLN(balance);
+
+    const vEmoji = $('verdictEmoji');
+    const vText = $('verdictText');
+
+    if (balance < -20) {
+      vEmoji.textContent = '💸';
+      vText.className = 'verdict loss';
+      vText.textContent = `Minus ${formatPLN(Math.abs(balance))}. Drogie hobby, ale przynajmniej na świeżym powietrzu.`;
+      balEl.style.color = 'var(--loss)';
+    } else if (balance < 0) {
+      vEmoji.textContent = '🤷';
+      vText.className = 'verdict loss';
+      vText.textContent = `Minus ${formatPLN(Math.abs(balance))}. Traktuj to jak bilet wstępu na atrakcję „kolejka z reklamówką".`;
+      balEl.style.color = 'var(--loss)';
+    } else if (balance === 0) {
+      vEmoji.textContent = '⚖️';
+      vText.className = 'verdict neutral';
+      vText.textContent = 'Idealny remis. Wszechświat jest w równowadze. Zen butelkomatu osiągnięty.';
+      balEl.style.color = 'var(--muted)';
+    } else {
+      vEmoji.textContent = '🎉';
+      vText.className = 'verdict win';
+      vText.textContent = `Plus ${formatPLN(balance)}! Oficjalnie zarabiasz na butelkach. Rozważ franczyzę.`;
+      balEl.style.color = 'var(--win)';
+    }
+
+    // Fun fact
+    const fact = funFacts[Math.floor(Math.random() * funFacts.length)];
+    $('funFact').textContent = '💡 ' + fact(rate, time, bottles);
+
+    // Show result
+    const rc = $('resultCard');
+    rc.classList.add('visible');
+    setTimeout(() => rc.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+  }
+
+  function getShareText() {
+    const rate = $('hourlyRate').value;
+    const time = $('timeSpent').value;
+    const bottles = $('bottleCount').value;
+    const timeCost = (parseFloat(rate) / 60) * parseFloat(time);
+    const bottleValue = parseInt(bottles, 10) * KAUCJA;
+    const balance = bottleValue - timeCost;
+
+    let emoji = balance >= 0 ? '🎉' : '💸';
+    let verb = balance >= 0 ? 'zarabiam' : 'tracę';
+    return `${emoji} Mój wynik z Kalkulatora Butelkomatów: ${verb} ${formatPLN(Math.abs(balance))} za każdym razem, gdy oddaję ${bottles} butelek!\n\nSprawdź swój wynik 👉`;
+  }
+
+  async function share() {
+    const text = getShareText();
+
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: 'Kalkulator Butelkomatów', text: text });
+        return;
+      } catch(e) { /* user cancelled or not supported */ }
+    }
+
+    // Fallback: copy to clipboard
+    try {
+      await navigator.clipboard.writeText(text);
+      showToast('Skopiowano do schowka!');
+    } catch(e) {
+      // last resort
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      showToast('Skopiowano do schowka!');
+    }
+  }
+
+  $('calcBtn').addEventListener('click', calculate);
+  $('shareBtn').addEventListener('click', share);
+
+  // Enter key support
+  document.querySelectorAll('input').forEach(input => {
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') calculate();
+    });
+  });
+</script>
+</body>
+</html>
