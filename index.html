@@ -155,12 +155,25 @@
     color:#fff;
     box-shadow:0 4px 16px rgba(46,204,64,.3);
   }
+  .share-row{
+    display:flex;
+    gap:10px;
+    margin-top:12px;
+  }
+  .share-row .btn{
+    flex:1;
+    font-size:.95rem;
+    padding:14px 8px;
+  }
+  .btn-download{
+    background:#5c6bc0;
+    color:#fff;
+    box-shadow:0 4px 16px rgba(92,107,192,.25);
+  }
   .btn-share{
     background:var(--accent2);
     color:#fff;
     box-shadow:0 4px 16px rgba(255,111,0,.25);
-    margin-top:12px;
-    font-size:1rem;
   }
 
   /* RESULT */
@@ -345,7 +358,10 @@
 
     <div class="fun-fact" id="funFact"></div>
 
-    <button class="btn btn-share" id="shareBtn">Udostępnij wynik</button>
+    <div class="share-row">
+      <button class="btn btn-download" id="downloadBtn">Pobierz kartę</button>
+      <button class="btn btn-share" id="shareBtn">Udostępnij wynik</button>
+    </div>
   </div>
 
   <footer class="footer">
@@ -457,7 +473,7 @@
 
     let emoji = balance >= 0 ? '🎉' : '💸';
     let verb = balance >= 0 ? 'zarabiam' : 'tracę';
-    return `${emoji} Mój wynik z Kalkulatora Butelkomatów: ${verb} ${formatPLN(Math.abs(balance))} za każdym razem, gdy oddaję ${bottles} butelek!\n\nSprawdź swój wynik 👉`;
+    return `${emoji} Mój wynik z Kalkulatora Butelkomatów: ${verb} ${formatPLN(Math.abs(balance))} za każdym razem, gdy oddaję ${bottles} butelek!\n\nSprawdź swój wynik 👉 https://agilelabspl.github.io/kalkulator-butelkomatow/`;
   }
 
   async function share() {
@@ -486,7 +502,146 @@
     }
   }
 
+  function generateCard() {
+    const rate = parseFloat($('hourlyRate').value);
+    const time = parseFloat($('timeSpent').value);
+    const bottles = parseInt($('bottleCount').value, 10);
+    const timeCost = (rate / 60) * time;
+    const bottleValue = bottles * KAUCJA;
+    const balance = bottleValue - timeCost;
+
+    const W = 1080, H = 1080;
+    const canvas = document.createElement('canvas');
+    canvas.width = W; canvas.height = H;
+    const ctx = canvas.getContext('2d');
+
+    // Background
+    ctx.fillStyle = '#fdf6e3';
+    ctx.fillRect(0, 0, W, H);
+
+    // Top accent bar
+    const barColor = balance >= 0 ? '#2ecc40' : '#e74c3c';
+    ctx.fillStyle = barColor;
+    ctx.fillRect(0, 0, W, 12);
+
+    // Bottles row
+    ctx.font = '64px serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🍾🍾🍾🍾🍾🍾🍾', W/2, 100);
+
+    // Title
+    ctx.fillStyle = '#2d2d2d';
+    ctx.font = 'bold 48px -apple-system, sans-serif';
+    ctx.fillText('Kalkulator Butelkomatów', W/2, 180);
+
+    // Verdict emoji
+    let vEmoji = balance < -20 ? '💸' : balance < 0 ? '🤷' : balance === 0 ? '⚖️' : '🎉';
+    ctx.font = '120px serif';
+    ctx.fillText(vEmoji, W/2, 340);
+
+    // Balance amount
+    ctx.font = 'bold 72px -apple-system, sans-serif';
+    ctx.fillStyle = barColor;
+    const balText = (balance >= 0 ? '+' : '') + formatPLN(balance);
+    ctx.fillText(balText, W/2, 450);
+
+    // Verdict text
+    ctx.font = 'bold 32px -apple-system, sans-serif';
+    ctx.fillStyle = '#2d2d2d';
+    let verdictLine = '';
+    if (balance < -20) verdictLine = 'Drogie hobby, ale przynajmniej na świeżym powietrzu.';
+    else if (balance < 0) verdictLine = 'Bilet wstępu na atrakcję „kolejka z reklamówką".';
+    else if (balance === 0) verdictLine = 'Zen butelkomatu osiągnięty.';
+    else verdictLine = 'Oficjalnie zarabiasz na butelkach!';
+    wrapText(ctx, verdictLine, W/2, 520, W - 120, 42);
+
+    // Breakdown box
+    ctx.fillStyle = '#ffffff';
+    roundRect(ctx, 100, 600, W - 200, 200, 24);
+    ctx.fill();
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 2;
+    roundRect(ctx, 100, 600, W - 200, 200, 24);
+    ctx.stroke();
+
+    ctx.textAlign = 'left';
+    ctx.font = '28px -apple-system, sans-serif';
+    ctx.fillStyle = '#777';
+    ctx.fillText('Twój czas jest wart', 140, 660);
+    ctx.fillText('Kaucja za butelki', 140, 720);
+    ctx.font = 'bold 30px -apple-system, sans-serif';
+    ctx.fillStyle = '#2d2d2d';
+    ctx.fillText('Bilans', 140, 780);
+
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 30px -apple-system, sans-serif';
+    ctx.fillStyle = '#2d2d2d';
+    ctx.fillText(formatPLN(timeCost), W - 140, 660);
+    ctx.fillText(formatPLN(bottleValue), W - 140, 720);
+    ctx.fillStyle = barColor;
+    ctx.font = 'bold 34px -apple-system, sans-serif';
+    ctx.fillText(balText, W - 140, 780);
+
+    // Separator lines
+    ctx.strokeStyle = '#eee';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(140, 680); ctx.lineTo(W-140, 680); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(140, 740); ctx.lineTo(W-140, 740); ctx.stroke();
+
+    // Input summary
+    ctx.textAlign = 'center';
+    ctx.font = '26px -apple-system, sans-serif';
+    ctx.fillStyle = '#999';
+    ctx.fillText(`${rate} zł/h  ·  ${time} min  ·  ${bottles} butelek`, W/2, 870);
+
+    // Footer
+    ctx.font = 'bold 28px -apple-system, sans-serif';
+    ctx.fillStyle = '#aaa';
+    ctx.fillText('Sprawdź swój wynik:', W/2, 960);
+    ctx.font = 'bold 30px -apple-system, sans-serif';
+    ctx.fillStyle = '#5c6bc0';
+    ctx.fillText('agilelabspl.github.io/kalkulator-butelkomatow', W/2, 1000);
+
+    // Download
+    const link = document.createElement('a');
+    link.download = 'kalkulator-butelkomatow.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+    showToast('Karta pobrana!');
+  }
+
+  function wrapText(ctx, text, x, y, maxWidth, lineHeight) {
+    const words = text.split(' ');
+    let line = '';
+    for (let i = 0; i < words.length; i++) {
+      const test = line + words[i] + ' ';
+      if (ctx.measureText(test).width > maxWidth && i > 0) {
+        ctx.fillText(line.trim(), x, y);
+        line = words[i] + ' ';
+        y += lineHeight;
+      } else {
+        line = test;
+      }
+    }
+    ctx.fillText(line.trim(), x, y);
+  }
+
+  function roundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x+r, y);
+    ctx.lineTo(x+w-r, y);
+    ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+    ctx.lineTo(x+w, y+h-r);
+    ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+    ctx.lineTo(x+r, y+h);
+    ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+    ctx.lineTo(x, y+r);
+    ctx.quadraticCurveTo(x, y, x+r, y);
+    ctx.closePath();
+  }
+
   $('calcBtn').addEventListener('click', calculate);
+  $('downloadBtn').addEventListener('click', generateCard);
   $('shareBtn').addEventListener('click', share);
 
   // Enter key support
